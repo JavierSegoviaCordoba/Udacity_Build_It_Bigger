@@ -5,6 +5,3 @@
 .DS_Store
 /build
 /captures
-/app/build
-/app/build/generated
-/app/build/intermediates
