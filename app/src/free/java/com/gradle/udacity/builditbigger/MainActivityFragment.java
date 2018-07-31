@@ -21,14 +21,9 @@ import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
 import com.google.android.gms.ads.doubleclick.PublisherInterstitialAd;
 import com.gradle.udacity.jokefactory.DisplayJokeActivity;
 
-
-/**
- * A placeholder fragment containing a simple view.
- */
-public class MainActivityFragment extends Fragment {
+public class MainActivityFragment extends Fragment implements JokeInterface {
 
     ProgressBar progressBar = null;
-    public String loadedJoke = null;
     private PublisherInterstitialAd publisherInterstitialAd;
 
     public MainActivityFragment() {
@@ -77,16 +72,17 @@ public class MainActivityFragment extends Fragment {
     }
 
     public void getJoke() {
-        new EndpointAsyncTask().execute(this);
+        EndpointAsyncTask jokeEndpoint = new EndpointAsyncTask();
+        jokeEndpoint.setJokeInterface(this);
+        jokeEndpoint.execute();
     }
 
-    public void startDisplayJokeActivity() {
+    public void startDisplayJokeActivity(String joke) {
         if (getActivity() != null) {
             Activity activity = getActivity();
             Intent intent = new Intent(activity, DisplayJokeActivity.class);
-            Toast.makeText(activity, loadedJoke, Toast.LENGTH_LONG).show();
             if (activity != null) {
-                intent.putExtra(activity.getString(R.string.joke_tag), loadedJoke);
+                intent.putExtra(activity.getString(R.string.joke_tag), joke);
                 activity.startActivity(intent);
                 progressBar.setVisibility(View.GONE);
             }
@@ -125,5 +121,21 @@ public class MainActivityFragment extends Fragment {
                 requestInterstitial();
             }
         });
+    }
+
+    @Override
+    public void onJokeSuccess(String joke) {
+        startDisplayJokeActivity(joke);
+    }
+
+    @Override
+    public void onJokeError() {
+        if (getActivity() != null) {
+            Toast.makeText(getActivity(),
+                    getActivity().getResources().getString(R.string.backend_error),
+                    Toast.LENGTH_SHORT).show();
+        }
+
+        progressBar.setVisibility(View.GONE);
     }
 }

@@ -19,10 +19,9 @@ import com.gradle.udacity.jokefactory.DisplayJokeActivity;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class MainActivityFragment extends Fragment {
+public class MainActivityFragment extends Fragment implements JokeInterface {
 
     ProgressBar progressBar = null;
-    public String loadedJoke = null;
 
     public MainActivityFragment() {
     }
@@ -30,6 +29,7 @@ public class MainActivityFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         return inflater.inflate(R.layout.fragment_main, container, false);
     }
 
@@ -40,6 +40,10 @@ public class MainActivityFragment extends Fragment {
         Activity activity = getActivity();
 
         if (isAdded() && activity != null) {
+
+            progressBar = activity.findViewById(R.id.joke_progressbar);
+            progressBar.setVisibility(View.GONE);
+
             Button button = activity.findViewById(R.id.joke_btn);
             button.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -48,26 +52,40 @@ public class MainActivityFragment extends Fragment {
                     getJoke();
                 }
             });
-
-            progressBar = activity.findViewById(R.id.joke_progressbar);
-            progressBar.setVisibility(View.GONE);
         }
     }
 
     public void getJoke() {
-        new EndpointAsyncTask().execute(this);
+        EndpointAsyncTask jokeEndpoint = new EndpointAsyncTask();
+        jokeEndpoint.setJokeInterface(this);
+        jokeEndpoint.execute();
     }
 
-    public void startDisplayJokeActivity() {
+    public void startDisplayJokeActivity(String joke) {
         if (getActivity() != null) {
             Activity activity = getActivity();
             Intent intent = new Intent(activity, DisplayJokeActivity.class);
-            Toast.makeText(activity, loadedJoke, Toast.LENGTH_LONG).show();
             if (activity != null) {
-                intent.putExtra(activity.getString(R.string.joke_tag), loadedJoke);
+                intent.putExtra(activity.getString(R.string.joke_tag), joke);
                 activity.startActivity(intent);
                 progressBar.setVisibility(View.GONE);
             }
         }
+    }
+
+    @Override
+    public void onJokeSuccess(String joke) {
+        startDisplayJokeActivity(joke);
+    }
+
+    @Override
+    public void onJokeError() {
+        if (getActivity() != null) {
+            Toast.makeText(getActivity(),
+                    getActivity().getResources().getString(R.string.backend_error),
+                    Toast.LENGTH_SHORT).show();
+        }
+
+        progressBar.setVisibility(View.GONE);
     }
 }

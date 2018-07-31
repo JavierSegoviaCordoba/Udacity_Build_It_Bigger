@@ -4,28 +4,35 @@ import android.os.AsyncTask;
 
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.extensions.android.json.AndroidJsonFactory;
+import com.google.api.client.googleapis.services.AbstractGoogleClientRequest;
+import com.google.api.client.googleapis.services.GoogleClientRequestInitializer;
 import com.udacity.gradle.builditbigger.backend.myApi.MyApi;
 
 import java.io.IOException;
 
-/**
- * Created by kev on 3/21/16.
- */
-public class EndpointAsyncTask extends AsyncTask<MainActivityFragment, Void, String> {
+public class EndpointAsyncTask extends AsyncTask<Void, Void, String> {
     private static MyApi myApiService = null;
-    private MainActivityFragment mainActivityFragment;
+    private JokeInterface jokeInterface;
+
+    public void setJokeInterface(JokeInterface jokeInterface) {
+        this.jokeInterface = jokeInterface;
+    }
 
     @Override
-    protected String doInBackground(MainActivityFragment... params) {
-        if (myApiService == null) {
-            MyApi.Builder builder = new MyApi.Builder(AndroidHttp.newCompatibleTransport(), new
-                    AndroidJsonFactory(), null)
-                    .setRootUrl("https://udacitybuilditbigger-210618.appspot.com/_ah/api/");
+    protected String doInBackground(Void... params) {
+        if(myApiService == null) {
+            MyApi.Builder builder = new MyApi.Builder(AndroidHttp.newCompatibleTransport(),
+                    new AndroidJsonFactory(), null)
+                    .setRootUrl("http://10.0.2.2:8080/_ah/api/")
+                    .setGoogleClientRequestInitializer(new GoogleClientRequestInitializer() {
+                        @Override
+                        public void initialize(AbstractGoogleClientRequest<?>
+                                                       abstractGoogleClientRequest) {
+                            abstractGoogleClientRequest.setDisableGZipContent(true);
+                        }
+                    });
             myApiService = builder.build();
         }
-
-        mainActivityFragment = params[0];
-
         try {
             return myApiService.tellJoke().execute().getData();
         } catch (IOException e) {
@@ -35,7 +42,12 @@ public class EndpointAsyncTask extends AsyncTask<MainActivityFragment, Void, Str
 
     @Override
     protected void onPostExecute(String result) {
-        mainActivityFragment.loadedJoke = result;
-        mainActivityFragment.startDisplayJokeActivity();
+
+        if ((result != null) && !result.startsWith("failed to connect")) {
+            jokeInterface.onJokeSuccess(result);
+        }
+        else {
+            jokeInterface.onJokeError();
+        }
     }
 }
